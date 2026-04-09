@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Reflex Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900">
+
+    <div class="max-w-4xl mx-auto p-6">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-blue-600">English Reflex Master</h1>
+            <p class="text-slate-500">Luyện phản xạ Nghe - Nói - Dịch</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="font-semibold mb-4 flex items-center">
+                    <span class="mr-2">💬</span> AI Tutor (Hỏi đáp)
+                </h2>
+                <div id="chat-box" class="h-64 overflow-y-auto mb-4 p-3 bg-slate-100 rounded-lg text-sm">
+                    <p class="text-blue-600 italic">AI: Hello! Are you ready to practice English today?</p>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="chat-input" placeholder="Type your answer..." class="flex-1 p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400">
+                    <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Gửi</button>
+                </div>
+            </section>
+
+            <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="font-semibold mb-4 flex items-center">
+                    <span class="mr-2">🔄</span> Dịch Phản Xạ
+                </h2>
+                <div class="mb-4">
+                    <p class="text-xs text-slate-400 uppercase font-bold">Câu tiếng Việt:</p>
+                    <p id="vietnamese-task" class="text-lg font-medium text-slate-800 italic">"Hôm nay bạn thấy thế nào?"</p>
+                </div>
+                <textarea id="translation-input" rows="3" placeholder="Dịch sang tiếng Anh..." class="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-green-400 mb-2"></textarea>
+                <div class="flex gap-2">
+                    <button onclick="checkTranslation()" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 font-medium">Kiểm tra & Giải thích</button>
+                </div>
+            </section>
+
+        </div>
+
+        <section id="explanation-area" class="mt-6 bg-yellow-50 p-6 rounded-xl border border-yellow-200 hidden">
+            <h3 class="font-bold text-yellow-700 mb-2 underline text-sm">PHÂN TÍCH LỖI & GỢI Ý:</h3>
+            <div id="explanation-content" class="text-slate-700 text-sm leading-relaxed">
+                </div>
+        </section>
+    </div>
+
+    <script>
+        // Logic giả lập - Sau này bạn sẽ kết nối API ở đây
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const chatBox = document.getElementById('chat-box');
+            if(input.value.trim() === "") return;
+
+            chatBox.innerHTML += `<p class="text-right mt-2"><b>You:</b> ${input.value}</p>`;
+            input.value = "";
+            
+            // Giả lập AI trả lời
+            setTimeout(() => {
+                chatBox.innerHTML += `<p class="text-left text-blue-600 mt-2"><b>AI:</b> That's interesting! Can you tell me more about that?</p>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1000);
+        }
+
+        function checkTranslation() {
+            const area = document.getElementById('explanation-area');
+            const content = document.getElementById('explanation-content');
+            area.classList.remove('hidden');
+            
+            // Giả lập nội dung giải thích
+            content.innerHTML = `
+                <p><b>Câu của bạn:</b> Good. (Hơi ngắn)</p>
+                <p class="mt-2 text-green-700"><b>Gợi ý:</b> "I'm doing well, thank you!" hoặc "I feel great today!"</p>
+                <p class="mt-2 text-xs"><b>Giải thích:</b> Trong giao tiếp, nên dùng đầy đủ chủ ngữ + vị ngữ để câu văn tự nhiên và lịch sự hơn.</p>
+            `;
+        }
+    </script>
+</body>
+</html>
