@@ -82,41 +82,40 @@
         generateNewQuest();
     }
 
-    window.onload = () => {
-        const savedKey = localStorage.getItem('gemini_key');
-        if(savedKey) {
-            document.getElementById('api-key-input').value = savedKey;
-            generateNewQuest();
-        }
-    };
-
     async function callGemini(prompt) {
         const key = localStorage.getItem('gemini_key');
         if(!key) throw new Error("Vui lòng nhập API Key");
 
-        // Đổi từ v1beta sang v1 để tăng tính ổn định
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
+        // Thử lần lượt các tên model phổ biến nhất
+        const models = [
+            "gemini-1.5-flash-latest", 
+            "gemini-1.0-pro"
+        ];
         
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
+        let lastError = "";
 
-            const data = await response.json();
+        for (let modelName of models) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
 
-            if (!response.ok) {
-                // Nếu lỗi 404, có thể do model name cần viết đầy đủ hơn
-                throw new Error(data.error ? data.error.message : "API Error");
+                const data = await response.json();
+                if (response.ok) {
+                    return data.candidates[0].content.parts[0].text;
+                } else {
+                    lastError = data.error ? data.error.message : "API Error";
+                }
+            } catch (e) {
+                lastError = e.message;
             }
-
-            return data.candidates[0].content.parts[0].text;
-        } catch (e) {
-            throw e;
         }
+        throw new Error(lastError);
     }
 
     async function generateNewQuest() {
@@ -124,14 +123,12 @@
         const topic = document.getElementById('topic-select').value;
         const level = document.getElementById('level-select').value;
 
-        taskDisplay.innerText = "⏳ Đang kết nối AI...";
+        taskDisplay.innerText = "⏳ Đang thử kết nối các dòng model...";
         
-        const prompt = `Bạn là giáo viên. Tạo 1 câu tiếng Việt chủ đề ${topic}, độ khó ${level}. 
-                        Trả về duy nhất JSON: {"vi": "...", "en": "..."}. Không viết gì thêm ngoài JSON.`;
+        const prompt = `Bạn là giáo viên. Tạo 1 câu tiếng Việt chủ đề ${topic}, độ khó ${level}. Trả về duy nhất JSON: {"vi": "...", "en": "..."}. Không viết gì thêm ngoài JSON.`;
         
         try {
             const resultText = await callGemini(prompt);
-            // Xử lý sạch các ký tự lạ AI có thể trả về
             const cleanJson = resultText.replace(/```json|```/g, "").trim();
             currentData = JSON.parse(cleanJson);
             
@@ -140,11 +137,9 @@
             document.getElementById('translation-input').value = "";
             document.getElementById('translation-input').focus();
         } catch (e) {
-            console.error(e);
-            taskDisplay.innerHTML = `<span class="text-red-500 text-xs text-left block">
-                <b>Lỗi:</b> ${e.message}<br>
-                1. Kiểm tra lại Key đã copy đúng chưa.<br>
-                2. Đảm bảo model Gemini 1.5 Flash đã được bật trong AI Studio.
+            taskDisplay.innerHTML = `<span class="text-red-500 text-[10px] text-left block">
+                <b>Lỗi hệ thống:</b> ${e.message}<br>
+                <b>Gợi ý:</b> Hãy truy cập <a href="https://aistudio.google.com/" target="_blank" class="underline">AI Studio</a>, tạo một API Key MỚI và thử lại. Đôi khi Key cũ bị kẹt quyền hạn.
             </span>`;
         }
     }
@@ -155,26 +150,32 @@
         if(!userAns) return;
 
         feedback.classList.remove('hidden');
-        feedback.innerHTML = "⏳ AI đang phân tích ngữ pháp...";
+        feedback.innerHTML = "⏳ AI đang chấm bài...";
         feedback.className = "mt-4 text-sm p-4 rounded-xl border bg-yellow-50 border-yellow-200";
 
-        const prompt = `So sánh câu dịch.
-                        Câu gốc: "${currentData.vi}"
-                        Đáp án chuẩn: "${currentData.en}"
-                        Người dùng viết: "${userAns}"
-                        Nhận xét đúng/sai, giải thích lỗi và gợi ý cách nói hay bằng tiếng Việt. Ngắn gọn.`;
+        const prompt = `So sánh:
+                        Gốc: "${currentData.vi}"
+                        Chuẩn: "${currentData.en}"
+                        Người dùng: "${userAns}"
+                        Nhận xét đúng/sai và lỗi ngữ pháp bằng tiếng Việt.`;
 
         try {
             const result = await callGemini(prompt);
             feedback.className = "mt-4 text-sm p-4 rounded-xl border bg-white border-slate-200 shadow-sm";
-            feedback.innerHTML = `
-                <div class="mb-3 leading-relaxed">${result.replace(/\n/g, "<br>")}</div>
-                <button onclick="generateNewQuest()" class="bg-blue-600 text-white px-4 py-1 rounded-lg text-xs font-bold hover:bg-blue-700 transition">CÂU TIẾP THEO ➔</button>
-            `;
+            feedback.innerHTML = `<div class="mb-3">${result.replace(/\n/g, "<br>")}</div>
+                <button onclick="generateNewQuest()" class="bg-blue-600 text-white px-4 py-1 rounded-lg text-xs font-bold">CÂU TIẾP THEO</button>`;
         } catch (e) {
             feedback.innerHTML = "❌ Lỗi: " + e.message;
         }
     }
+
+    window.onload = () => {
+        const savedKey = localStorage.getItem('gemini_key');
+        if(savedKey) {
+            document.getElementById('api-key-input').value = savedKey;
+            generateNewQuest();
+        }
+    };
 
     document.getElementById('translation-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
