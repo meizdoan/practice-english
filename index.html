@@ -71,92 +71,108 @@
         </div>
     </div>
 
-    <script>
-        let currentData = { vi: "", en: "" };
+   <script>
+    let currentData = { vi: "", en: "" };
 
-        // 1. QUẢN LÝ API KEY
-        function saveKey() {
-            const key = document.getElementById('api-key-input').value;
-            localStorage.setItem('gemini_key', key);
-            alert("Đã lưu Key thành công! Giờ bạn có thể học.");
+    function saveKey() {
+        const key = document.getElementById('api-key-input').value.trim();
+        if(!key) return alert("Vui lòng dán Key!");
+        localStorage.setItem('gemini_key', key);
+        alert("Đã lưu Key thành công!");
+        generateNewQuest();
+    }
+
+    window.onload = () => {
+        const savedKey = localStorage.getItem('gemini_key');
+        if(savedKey) {
+            document.getElementById('api-key-input').value = savedKey;
             generateNewQuest();
         }
+    };
 
-        window.onload = () => {
-            const savedKey = localStorage.getItem('gemini_key');
-            if(savedKey) {
-                document.getElementById('api-key-input').value = savedKey;
-                generateNewQuest();
-            }
-        };
+    async function callGemini(prompt) {
+        const key = localStorage.getItem('gemini_key');
+        if(!key) throw new Error("Missing Key");
 
-        // 2. GỌI GEMINI AI ĐỂ TẠO CÂU HỎI
-        async function callGemini(prompt) {
-            const key = localStorage.getItem('gemini_key');
-            if(!key) return alert("Vui lòng nhập API Key trước!");
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-            const data = await response.json();
-            return data.candidates[0].content.parts[0].text;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error.message || "API Error");
         }
 
-        async function generateNewQuest() {
-            const topic = document.getElementById('topic-select').value;
-            const level = document.getElementById('level-select').value;
-            const taskDisplay = document.getElementById('vietnamese-task');
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+    }
+
+    async function generateNewQuest() {
+        const taskDisplay = document.getElementById('vietnamese-task');
+        const topic = document.getElementById('topic-select').value;
+        const level = document.getElementById('level-select').value;
+
+        taskDisplay.innerText = "⏳ AI đang soạn câu hỏi...";
+        
+        const prompt = `Bạn là giáo viên tiếng Anh. Tạo 1 câu tiếng Việt chủ đề ${topic}, độ khó ${level}. 
+                        Trả về duy nhất định dạng JSON: {"vi": "...", "en": "..."}. Không viết thêm gì ngoài JSON.`;
+        
+        try {
+            const resultText = await callGemini(prompt);
+            // Xử lý loại bỏ Markdown (```json ... ```) nếu AI trả về thừa
+            const cleanJson = resultText.replace(/```json|```/g, "").trim();
+            currentData = JSON.parse(cleanJson);
             
-            taskDisplay.innerText = "AI đang suy nghĩ câu hỏi...";
+            taskDisplay.innerText = `"${currentData.vi}"`;
             document.getElementById('ai-feedback').classList.add('hidden');
             document.getElementById('translation-input').value = "";
-
-            const prompt = `Tạo 1 câu tiếng Việt chủ đề ${topic}, độ khó ${level}. Trả về định dạng JSON: {"vi": "...", "en": "..."}. Chỉ trả về JSON, không nói gì thêm.`;
-            
-            try {
-                const resultText = await callGemini(prompt);
-                const cleanJson = resultText.replace(/```json|```/g, "").trim();
-                currentData = JSON.parse(cleanJson);
-                taskDisplay.innerText = `"${currentData.vi}"`;
-            } catch (e) {
-                taskDisplay.innerText = "Lỗi khi gọi AI. Kiểm tra lại Key của bạn.";
-            }
+        } catch (e) {
+            console.error(e);
+            taskDisplay.innerHTML = `<span class="text-red-500 text-sm">Lỗi: ${e.message}. <br> Hãy kiểm tra lại Key hoặc kết nối mạng.</span>`;
         }
+    }
 
-        // 3. KIỂM TRA VÀ GIẢI THÍCH LỖI
-        async function checkWithAI() {
-            const userAns = document.getElementById('translation-input').value.trim();
-            const feedback = document.getElementById('ai-feedback');
-            if(!userAns) return;
+    async function checkWithAI() {
+        const userAns = document.getElementById('translation-input').value.trim();
+        const feedback = document.getElementById('ai-feedback');
+        if(!userAns) return;
 
-            feedback.classList.remove('hidden');
-            feedback.innerHTML = "AI đang chấm bài...";
-            feedback.className = "mt-4 text-sm p-4 rounded-xl border bg-yellow-50 border-yellow-200 text-slate-700";
+        feedback.classList.remove('hidden');
+        feedback.innerHTML = "⏳ AI đang chấm điểm...";
+        feedback.className = "mt-4 text-sm p-4 rounded-xl border bg-yellow-50 border-yellow-200";
 
-            const prompt = `Câu gốc tiếng Việt: "${currentData.vi}". 
-                           Đáp án chuẩn: "${currentData.en}". 
-                           Người dùng dịch là: "${userAns}". 
-                           Hãy nhận xét xem câu của người dùng đúng chưa, giải thích lỗi ngữ pháp (nếu có) và gợi ý 2 cách nói tự nhiên hơn. Trả về bằng tiếng Việt, ngắn gọn, súc tích.`;
+        const prompt = `So sánh câu dịch của người dùng với đáp án chuẩn.
+                        Câu gốc: "${currentData.vi}"
+                        Đáp án chuẩn: "${currentData.en}"
+                        Người dùng viết: "${userAns}"
+                        Hãy nhận xét ngắn gọn (đúng/sai), chỉ ra lỗi ngữ pháp và gợi ý cách dùng từ tự nhiên hơn bằng tiếng Việt.`;
 
-            try {
-                const feedbackText = await callGemini(prompt);
-                feedback.innerHTML = `<div class="prose prose-sm">${feedbackText.replace(/\n/g, "<br>")}</div>
-                <button onclick="generateNewQuest()" class="mt-4 bg-green-600 text-white px-4 py-1 rounded text-xs">Học tiếp câu mới</button>`;
-            } catch (e) {
-                feedback.innerHTML = "Không thể kết nối AI để giải thích.";
-            }
+        try {
+            const result = await callGemini(prompt);
+            feedback.className = "mt-4 text-sm p-4 rounded-xl border bg-white border-slate-200 shadow-sm";
+            feedback.innerHTML = `
+                <div class="mb-3">${result.replace(/\n/g, "<br>")}</div>
+                <button onclick="generateNewQuest()" class="bg-blue-600 text-white px-4 py-1 rounded-lg text-xs font-bold">CÂU TIẾP THEO ➔</button>
+            `;
+        } catch (e) {
+            feedback.innerHTML = "❌ Lỗi khi chấm điểm: " + e.message;
         }
+    }
 
-        // 4. ENTER ĐỂ KIỂM TRA
-        document.getElementById('translation-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                checkWithAI();
-            }
-        });
+    // Bắt phím Enter
+    document.getElementById('translation-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            checkWithAI();
+        }
+    });
+</script>
 
         // (Giữ nguyên logic Dictation local ở đây nếu cần)
     </script>
