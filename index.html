@@ -3,84 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Reflex Tool</title>
+    <title>English Reflex & Dictation Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .correct { color: #16a34a; font-weight: bold; }
+        .incorrect { color: #dc2626; text-decoration: line-through; }
+    </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-900">
+<body class="bg-slate-50 font-sans text-slate-900 pb-20">
 
-    <div class="max-w-4xl mx-auto p-6">
-        <header class="text-center mb-10">
-            <h1 class="text-3xl font-bold text-blue-600">English Reflex Master</h1>
-            <p class="text-slate-500">Luyện phản xạ Nghe - Nói - Dịch</p>
+    <div class="max-w-5xl mx-auto p-6">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-600 uppercase tracking-tight">English Learning Tool</h1>
+            <p class="text-slate-500">Phản xạ & Nghe chép chính tả</p>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h2 class="font-semibold mb-4 flex items-center">
-                    <span class="mr-2">💬</span> AI Tutor (Hỏi đáp)
-                </h2>
-                <div id="chat-box" class="h-64 overflow-y-auto mb-4 p-3 bg-slate-100 rounded-lg text-sm">
-                    <p class="text-blue-600 italic">AI: Hello! Are you ready to practice English today?</p>
+            <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="font-bold mb-4 flex items-center text-blue-700">💬 AI TUTOR</h2>
+                <div id="chat-box" class="h-80 overflow-y-auto mb-4 p-3 bg-slate-50 rounded-lg text-sm italic">
+                    AI: Hello! Nhập tin nhắn và nhấn Enter để trò chuyện.
                 </div>
-                <div class="flex gap-2">
-                    <input type="text" id="chat-input" placeholder="Type your answer..." class="flex-1 p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400">
-                    <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Gửi</button>
-                </div>
+                <input type="text" id="chat-input" placeholder="Type here..." 
+                       class="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400">
             </section>
 
-            <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h2 class="font-semibold mb-4 flex items-center">
-                    <span class="mr-2">🔄</span> Dịch Phản Xạ
-                </h2>
-                <div class="mb-4">
-                    <p class="text-xs text-slate-400 uppercase font-bold">Câu tiếng Việt:</p>
-                    <p id="vietnamese-task" class="text-lg font-medium text-slate-800 italic">"Hôm nay bạn thấy thế nào?"</p>
+            <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="font-bold mb-4 flex items-center text-green-700">🔄 DỊCH PHẢN XẠ</h2>
+                <div class="flex gap-2 mb-4 flex-wrap">
+                    <select id="topic-select" class="text-xs p-1 border rounded bg-slate-50">
+                        <option value="Công việc">Công việc</option>
+                        <option value="Du lịch">Du lịch</option>
+                    </select>
+                    <select id="level-select" class="text-xs p-1 border rounded bg-slate-50">
+                        <option value="Dễ">Dễ</option>
+                        <option value="Trung bình">Trung bình</option>
+                        <option value="Khó">Khó</option>
+                    </select>
                 </div>
-                <textarea id="translation-input" rows="3" placeholder="Dịch sang tiếng Anh..." class="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-green-400 mb-2"></textarea>
-                <div class="flex gap-2">
-                    <button onclick="checkTranslation()" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 font-medium">Kiểm tra & Giải thích</button>
+                <div class="mb-4 bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                    <p id="vietnamese-task" class="text-lg font-medium italic">Đang tải...</p>
+                </div>
+                <textarea id="translation-input" rows="3" placeholder="Dịch và nhấn Enter..." 
+                          class="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-green-400 mb-2"></textarea>
+                <div id="translation-feedback" class="text-sm hidden p-3 bg-yellow-50 rounded border border-yellow-100"></div>
+            </section>
+
+            <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 shadow-md">
+                <h2 class="font-bold mb-4 flex items-center text-purple-700">🎧 DICTATION</h2>
+                
+                <div class="mb-4">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Chọn bài nghe:</label>
+                    <select id="audio-select" onchange="loadAudioTask()" class="w-full text-sm p-2 border rounded mt-1 bg-slate-50 outline-none">
+                        <option value="0">Podcast 1: Morning Routine</option>
+                        <option value="1">Podcast 2: Business Meeting</option>
+                    </select>
+                </div>
+
+                <div class="bg-slate-900 rounded-lg p-2 mb-4">
+                    <audio id="audio-player" controls class="w-full h-8"></audio>
+                </div>
+
+                <div class="relative">
+                    <textarea id="dictation-input" rows="5" placeholder="Nghe và chép lại tại đây..." 
+                              class="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-400 text-sm leading-relaxed"></textarea>
+                    <button onclick="checkDictation()" class="w-full mt-2 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-bold transition">KIỂM TRA CHÍNH TẢ</button>
+                </div>
+
+                <div id="dictation-result" class="mt-4 text-sm hidden p-3 bg-slate-50 rounded border border-slate-200">
+                    <p class="font-bold text-xs text-slate-500 mb-2 underline text-uppercase">Kết quả so sánh:</p>
+                    <div id="comparison-display" class="leading-relaxed"></div>
                 </div>
             </section>
 
         </div>
-
-        <section id="explanation-area" class="mt-6 bg-yellow-50 p-6 rounded-xl border border-yellow-200 hidden">
-            <h3 class="font-bold text-yellow-700 mb-2 underline text-sm">PHÂN TÍCH LỖI & GỢI Ý:</h3>
-            <div id="explanation-content" class="text-slate-700 text-sm leading-relaxed">
-                </div>
-        </section>
     </div>
 
     <script>
-        // Logic giả lập - Sau này bạn sẽ kết nối API ở đây
-        function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const chatBox = document.getElementById('chat-box');
-            if(input.value.trim() === "") return;
+        // 1. DỮ LIỆU CỦA BẠN (Bạn có thể tự cập nhật ở đây)
+        const translationDB = [
+            { topic: "Công việc", level: "Dễ", vi: "Tôi đi làm lúc 8 giờ sáng.", en: ["I go to work at 8 AM."] },
+            { topic: "Du lịch", level: "Trung bình", vi: "Tôi muốn đặt một phòng đôi.", en: ["I'd like to book a double room."] }
+        ];
 
-            chatBox.innerHTML += `<p class="text-right mt-2"><b>You:</b> ${input.value}</p>`;
-            input.value = "";
-            
-            // Giả lập AI trả lời
-            setTimeout(() => {
-                chatBox.innerHTML += `<p class="text-left text-blue-600 mt-2"><b>AI:</b> That's interesting! Can you tell me more about that?</p>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }, 1000);
+        const dictationDB = [
+            {
+                title: "Morning Routine",
+                url: "https://www.w3schools.com/html/horse.ogg", // Thay bằng link file nghe của bạn
+                sub: "Every morning I wake up at six o'clock and drink a cup of coffee."
+            },
+            {
+                title: "Business Meeting",
+                url: "https://www.w3schools.com/html/horse.ogg",
+                sub: "We need to discuss the new project details in the meeting room."
+            }
+        ];
+
+        // 2. LOGIC DICTATION
+        function loadAudioTask() {
+            const index = document.getElementById('audio-select').value;
+            const task = dictationDB[index];
+            document.getElementById('audio-player').src = task.url;
+            document.getElementById('dictation-input').value = "";
+            document.getElementById('dictation-result').classList.add('hidden');
         }
 
-        function checkTranslation() {
-            const area = document.getElementById('explanation-area');
-            const content = document.getElementById('explanation-content');
-            area.classList.remove('hidden');
-            
-            // Giả lập nội dung giải thích
-            content.innerHTML = `
-                <p><b>Câu của bạn:</b> Good. (Hơi ngắn)</p>
-                <p class="mt-2 text-green-700"><b>Gợi ý:</b> "I'm doing well, thank you!" hoặc "I feel great today!"</p>
-                <p class="mt-2 text-xs"><b>Giải thích:</b> Trong giao tiếp, nên dùng đầy đủ chủ ngữ + vị ngữ để câu văn tự nhiên và lịch sự hơn.</p>
-            `;
+        function checkDictation() {
+            const index = document.getElementById('audio-select').value;
+            const userText = document.getElementById('dictation-input').value.trim().toLowerCase().replace(/[.,?!]/g, "");
+            const originalText = dictationDB[index].sub;
+            const originalWords = originalText.split(" ");
+            const userWords = userText.split(" ");
+
+            let resultHTML = "";
+            originalWords.forEach((word, i) => {
+                let cleanWord = word.toLowerCase().replace(/[.,?!]/g, "");
+                if (userWords[i] === cleanWord) {
+                    resultHTML += `<span class="correct">${word}</span> `;
+                } else {
+                    resultHTML += `<span class="incorrect">${word}</span> <span class="text-blue-500">[${userWords[i] || '... '}]</span> `;
+                }
+            });
+
+            document.getElementById('dictation-result').classList.remove('hidden');
+            document.getElementById('comparison-display').innerHTML = resultHTML;
         }
+
+        // 3. LOGIC DỊCH PHẢN XẠ (Enter to check)
+        let currentTrans = {};
+        function nextTrans() {
+            const topic = document.getElementById('topic-select').value;
+            const level = document.getElementById('level-select').value;
+            const filtered = translationDB.filter(q => q.topic === topic && q.level === level);
+            if(filtered.length > 0) {
+                currentTrans = filtered[Math.floor(Math.random() * filtered.length)];
+                document.getElementById('vietnamese-task').innerText = `"${currentTrans.vi}"`;
+                document.getElementById('translation-feedback').classList.add('hidden');
+                document.getElementById('translation-input').value = "";
+            }
+        }
+
+        document.getElementById('translation-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const userAns = this.value.trim().toLowerCase().replace(/[.,?!]/g, "");
+                const isCorrect = currentTrans.en.some(ans => ans.toLowerCase().replace(/[.,?!]/g, "") === userAns);
+                const feedback = document.getElementById('translation-feedback');
+                feedback.classList.remove('hidden');
+                feedback.innerHTML = isCorrect ? "<b class='text-green-600'>Chính xác!</b>" : `<b class='text-red-600'>Chưa đúng.</b> Đáp án: ${currentTrans.en[0]}`;
+            }
+        });
+
+        // Khởi tạo
+        window.onload = () => {
+            nextTrans();
+            loadAudioTask();
+        };
     </script>
 </body>
 </html>
