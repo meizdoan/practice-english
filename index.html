@@ -1,56 +1,174 @@
-// ... (Phần database giữ nguyên như cũ) ...
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Reflex & Dictation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .correct { color: #16a34a; font-weight: bold; }
+        .incorrect { color: #dc2626; text-decoration: line-through; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 pb-20">
 
-let currentTrans = {};
+    <div class="max-w-6xl mx-auto p-6">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-600">ENGLISH PRACTICE TOOL</h1>
+            <p class="text-slate-500 text-sm">Phản xạ dịch & Nghe chép chính tả</p>
+        </header>
 
-function nextTrans() {
-    const topic = document.getElementById('topic-select').value;
-    const level = document.getElementById('level-select').value;
-    const filtered = translationDB.filter(q => q.topic === topic && q.level === level);
-    
-    if(filtered.length > 0) {
-        currentTrans = filtered[Math.floor(Math.random() * filtered.length)];
-        document.getElementById('vietnamese-task').innerText = `"${currentTrans.vi}"`;
-        document.getElementById('translation-feedback').classList.add('hidden');
-        document.getElementById('translation-input').value = "";
-        document.getElementById('translation-input').focus(); // Tự động focus để gõ tiếp
-    }
-}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="font-bold mb-4 text-green-700 flex items-center gap-2">🔄 DỊCH PHẢN XẠ</h2>
+                
+                <div class="flex gap-2 mb-4">
+                    <select id="topic-select" class="text-xs p-2 border rounded bg-slate-50 outline-none">
+                        <option value="Công việc">Chủ đề: Công việc</option>
+                        <option value="Du lịch">Chủ đề: Du lịch</option>
+                    </select>
+                    <select id="level-select" class="text-xs p-2 border rounded bg-slate-50 outline-none">
+                        <option value="Dễ">Mức: Dễ</option>
+                        <option value="Trung bình">Mức: Trung bình</option>
+                    </select>
+                </div>
 
-// Hàm xử lý kiểm tra kết quả
-function processCheck() {
-    const inputEl = document.getElementById('translation-input');
-    const userAns = inputEl.value.trim().toLowerCase().replace(/[.,?!]/g, "");
-    const feedback = document.getElementById('translation-feedback');
-    
-    if(!userAns) return;
+                <div class="mb-4 bg-blue-50 p-5 rounded-xl border-l-4 border-blue-400">
+                    <p class="text-[10px] text-blue-500 font-bold mb-1 uppercase">Dịch câu này:</p>
+                    <p id="vietnamese-task" class="text-lg font-medium italic text-slate-800">Đang tải...</p>
+                </div>
 
-    // So khớp với danh sách đáp án
-    const isCorrect = currentTrans.en.some(ans => 
-        ans.toLowerCase().replace(/[.,?!]/g, "") === userAns
-    );
+                <textarea id="translation-input" rows="3" 
+                    placeholder="Gõ câu dịch và nhấn Enter..." 
+                    class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-green-400 mb-2 text-sm shadow-sm"></textarea>
+                
+                <div class="flex gap-2">
+                    <button onclick="processCheck()" class="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition">KIỂM TRA (ENTER)</button>
+                    <button onclick="nextTrans()" class="px-4 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200">Đổi câu</button>
+                </div>
 
-    feedback.classList.remove('hidden');
-    
-    if (isCorrect) {
-        feedback.innerHTML = "<b class='text-green-600'>✅ Chính xác! Đang chuyển câu...</b>";
-        feedback.style.backgroundColor = "#f0fdf4"; // Màu nền xanh nhẹ
-        
-        // Đợi 1.2 giây rồi tự nhảy sang câu mới
-        setTimeout(() => {
-            nextTrans();
-        }, 1200);
-    } else {
-        feedback.innerHTML = `<b class='text-red-600'>❌ Chưa đúng.</b><br>Đáp án: <span class="font-semibold">${currentTrans.en[0]}</span>`;
-        feedback.style.backgroundColor = "#fef2f2"; // Màu nền đỏ nhẹ
-    }
-}
+                <div id="translation-feedback" class="mt-4 text-sm hidden p-4 rounded-xl border transition-all"></div>
+            </section>
 
-// Sự kiện nhấn Enter trong ô dịch
-document.getElementById('translation-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault(); // Chặn xuống dòng
-        processCheck();
-    }
-});
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="font-bold mb-4 text-purple-700 flex items-center gap-2">🎧 NGHE CHÉP CHÍNH TẢ</h2>
+                
+                <div class="mb-4">
+                    <select id="audio-select" onchange="loadAudioTask()" class="w-full text-sm p-2 border rounded-lg bg-slate-50 outline-none">
+                        <option value="0">Bài nghe 1: Morning Routine</option>
+                        <option value="1">Bài nghe 2: Travel Plans</option>
+                    </select>
+                </div>
 
-// Gán hàm vào nút "Kiểm tra" (đảm bảo ở phần HTML nút này có onclick="processCheck()")
+                <div class="bg-slate-800 rounded-xl p-3 mb-4 flex items-center gap-4">
+                    <audio id="audio-player" controls class="w-full h-10"></audio>
+                </div>
+
+                <textarea id="dictation-input" rows="4" 
+                    placeholder="Nghe và chép lại tại đây..." 
+                    class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-purple-400 text-sm leading-relaxed"></textarea>
+                
+                <button onclick="checkDictation()" class="w-full mt-3 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-bold transition shadow-md">SO KHỚP ĐÁP ÁN</button>
+
+                <div id="dictation-result" class="mt-4 text-sm hidden p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <p class="font-bold text-xs text-slate-400 mb-2 uppercase">Kết quả đối chiếu:</p>
+                    <div id="comparison-display" class="leading-relaxed text-sm"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // DATA
+        const translationDB = [
+            { topic: "Công việc", level: "Dễ", vi: "Tôi thường đi làm lúc 8 giờ sáng.", en: ["I usually go to work at 8 AM.", "I go to work at 8 o'clock."] },
+            { topic: "Công việc", level: "Trung bình", vi: "Vui lòng gửi cho tôi bản báo cáo trước 5 giờ chiều.", en: ["Please send me the report before 5 PM."] },
+            { topic: "Du lịch", level: "Dễ", vi: "Nhà vệ sinh ở đâu vậy?", en: ["Where is the bathroom?", "Where is the restroom?"] }
+        ];
+
+        const dictationDB = [
+            { title: "Morning Routine", url: "https://www.w3schools.com/html/horse.ogg", sub: "I wake up early and start my day with a cup of hot coffee." },
+            { title: "Travel Plans", url: "https://www.w3schools.com/html/horse.ogg", sub: "I am planning to visit Tokyo next summer with my family." }
+        ];
+
+        let currentTrans = {};
+
+        // LOGIC DỊCH PHẢN XẠ
+        function nextTrans() {
+            const topic = document.getElementById('topic-select').value;
+            const level = document.getElementById('level-select').value;
+            const filtered = translationDB.filter(q => q.topic === topic && q.level === level);
+            
+            if(filtered.length > 0) {
+                currentTrans = filtered[Math.floor(Math.random() * filtered.length)];
+                document.getElementById('vietnamese-task').innerText = `"${currentTrans.vi}"`;
+                document.getElementById('translation-feedback').classList.add('hidden');
+                document.getElementById('translation-input').value = "";
+                document.getElementById('translation-input').focus();
+            }
+        }
+
+        function processCheck() {
+            const inputEl = document.getElementById('translation-input');
+            const userAns = inputEl.value.trim().toLowerCase().replace(/[.,?!]/g, "");
+            const feedback = document.getElementById('translation-feedback');
+            
+            if(!userAns) return;
+
+            const isCorrect = currentTrans.en.some(ans => ans.toLowerCase().replace(/[.,?!]/g, "") === userAns);
+            feedback.classList.remove('hidden');
+
+            if (isCorrect) {
+                feedback.className = "mt-4 text-sm p-4 rounded-xl border bg-green-50 border-green-200 text-green-700 font-medium";
+                feedback.innerHTML = "✅ Tuyệt vời! Bạn đã dịch chính xác.";
+                setTimeout(nextTrans, 1500); 
+            } else {
+                feedback.className = "mt-4 text-sm p-4 rounded-xl border bg-red-50 border-red-200 text-red-700";
+                feedback.innerHTML = `❌ Sai rồi. Đáp án đúng là: <br><b class="text-slate-900">"${currentTrans.en[0]}"</b>`;
+            }
+        }
+
+        // Bắt phím Enter
+        document.getElementById('translation-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                processCheck();
+            }
+        });
+
+        // LOGIC DICTATION
+        function loadAudioTask() {
+            const index = document.getElementById('audio-select').value;
+            document.getElementById('audio-player').src = dictationDB[index].url;
+            document.getElementById('dictation-input').value = "";
+            document.getElementById('dictation-result').classList.add('hidden');
+        }
+
+        function checkDictation() {
+            const index = document.getElementById('audio-select').value;
+            const userText = document.getElementById('dictation-input').value.trim().toLowerCase().split(/\s+/);
+            const originalWords = dictationDB[index].sub.split(/\s+/);
+
+            let resultHTML = "";
+            originalWords.forEach((word, i) => {
+                let cleanWord = word.toLowerCase().replace(/[.,?!]/g, "");
+                let cleanUserWord = userText[i] ? userText[i].toLowerCase().replace(/[.,?!]/g, "") : "";
+
+                if (cleanUserWord === cleanWord) {
+                    resultHTML += `<span class="correct">${word}</span> `;
+                } else {
+                    resultHTML += `<span class="incorrect">${word}</span> <span class="text-blue-500 font-bold">[${userText[i] || '... '}]</span> `;
+                }
+            });
+
+            document.getElementById('dictation-result').classList.remove('hidden');
+            document.getElementById('comparison-display').innerHTML = resultHTML;
+        }
+
+        window.onload = () => { nextTrans(); loadAudioTask(); };
+        document.getElementById('topic-select').onchange = nextTrans;
+        document.getElementById('level-select').onchange = nextTrans;
+    </script>
+</body>
+</html>
