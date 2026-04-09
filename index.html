@@ -6,143 +6,125 @@
     <title>English Mastery - No More Errors</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .correct { color: #16a34a; font-weight: bold; background: #f0fdf4; }
-        .incorrect { color: #dc2626; text-decoration: line-through; background: #fef2f2; }
+        .correct-glow { box-shadow: 0 0 15px rgba(34, 197, 94, 0.4); border-color: #22c55e; }
+        .wrong-glow { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); border-color: #ef4444; }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-900 pb-20">
 
-    <div class="max-w-4xl mx-auto p-4 md:p-6">
-        <details class="mb-6 bg-slate-100 rounded-lg p-2 text-[10px]">
-            <summary class="cursor-pointer text-slate-500 font-bold">CÀI ĐẶT API KEY (Dành cho tính năng AI giải thích)</summary>
-            <div class="flex gap-2 mt-2">
-                <input type="password" id="api-key-input" placeholder="Dán Gemini Key..." class="flex-1 p-1 rounded border">
-                <button onclick="saveKey()" class="bg-blue-600 text-white px-3 py-1 rounded">LƯU</button>
-            </div>
-        </details>
-
-        <header class="text-center mb-8">
-            <h1 class="text-3xl font-black text-indigo-600 tracking-tighter italic">ENGLISH REFLEX v2</h1>
-            <p class="text-slate-400 text-xs">Học từ bộ câu hỏi chuẩn hoặc dùng AI chấm điểm</p>
+    <div class="max-w-3xl mx-auto p-4 md:p-10">
+        
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-black text-slate-800 tracking-tighter uppercase italic">Reflex English <span class="text-blue-600">PRO</span></h1>
+            <p class="text-slate-400 text-sm mt-2 font-medium">Luyện dịch phản xạ không cần API Key</p>
         </header>
 
-        <section class="bg-white p-6 rounded-3xl shadow-xl border border-slate-200">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="font-black text-slate-700 tracking-wide">🔄 LUYỆN DỊCH</h2>
-                <div class="flex gap-2">
-                    <select id="topic-select" onchange="nextTrans()" class="text-[10px] font-bold p-2 border rounded-full bg-slate-50 outline-none border-slate-300 uppercase">
-                        <option value="Công việc">💼 Công việc</option>
-                        <option value="Du lịch">✈️ Du lịch</option>
-                        <option value="Giao tiếp">🗣️ Giao tiếp</option>
-                    </select>
-                </div>
+        <section class="bg-white p-8 rounded-[2rem] shadow-2xl border border-slate-100">
+            <div class="flex gap-2 mb-8 justify-center">
+                <button onclick="setTopic('Công việc')" class="topic-btn px-4 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-500 hover:bg-blue-600 hover:text-white transition-all">💼 CÔNG VIỆC</button>
+                <button onclick="setTopic('Du lịch')" class="topic-btn px-4 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-500 hover:bg-blue-600 hover:text-white transition-all">✈️ DU LỊCH</button>
+                <button onclick="setTopic('Đời sống')" class="topic-btn px-4 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-500 hover:bg-blue-600 hover:text-white transition-all">🏠 ĐỜI SỐNG</button>
             </div>
 
-            <div class="mb-6 bg-indigo-600 p-8 rounded-2xl shadow-inner relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-10 text-white text-6xl font-bold">"</div>
-                <p id="vietnamese-task" class="text-xl md:text-2xl font-bold text-white leading-tight text-center italic">Đang tải câu hỏi...</p>
+            <div class="mb-8 text-center min-h-[80px] flex items-center justify-center">
+                <p id="vi-display" class="text-2xl md:text-3xl font-bold text-slate-800 leading-tight italic">Đang tải...</p>
             </div>
 
-            <textarea id="translation-input" rows="3" placeholder="Gõ câu dịch tiếng Anh của bạn..." 
-                      class="w-full p-4 border-2 border-slate-200 rounded-2xl outline-none focus:border-indigo-500 mb-4 text-lg transition-all"></textarea>
-            
+            <div class="relative mb-4">
+                <textarea id="en-input" rows="3" 
+                    placeholder="Gõ bản dịch tiếng Anh của bạn tại đây..." 
+                    class="w-full p-5 text-lg border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 transition-all shadow-inner"></textarea>
+            </div>
+
             <div class="flex gap-3">
-                <button onclick="checkResult()" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg hover:bg-indigo-700 active:scale-95 transition">KIỂM TRA (ENTER)</button>
-                <button onclick="nextTrans()" class="px-6 bg-slate-100 text-slate-400 rounded-2xl hover:bg-slate-200 transition">➔</button>
+                <button onclick="handleCheck()" class="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-600 transition-all active:scale-95 shadow-lg">KIỂM TRA (ENTER)</button>
+                <button onclick="loadQuestion()" class="px-6 bg-slate-100 text-slate-400 rounded-2xl hover:bg-slate-200 transition-all text-xl">➔</button>
             </div>
 
-            <div id="feedback-area" class="mt-6 hidden animate-in fade-in duration-500">
-                <div id="feedback-content" class="p-5 rounded-2xl border-2"></div>
+            <div id="result-box" class="mt-6 hidden p-5 rounded-2xl border-2 animate-bounce-short">
+                <p id="result-text" class="font-bold mb-1"></p>
+                <p id="result-sample" class="text-sm opacity-80 italic"></p>
             </div>
         </section>
+
+        <div class="mt-10 text-center">
+            <details class="text-slate-400">
+                <summary class="text-[10px] cursor-pointer hover:text-blue-500 font-bold uppercase tracking-widest">Cấu hình nâng cao (AI Explanation)</summary>
+                <div class="mt-4 flex max-w-xs mx-auto gap-2">
+                    <input type="password" id="api-key" placeholder="Nhập Gemini Key..." class="flex-1 p-2 text-xs border rounded-lg outline-none">
+                    <button onclick="saveKey()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-[10px] font-bold">LƯU</button>
+                </div>
+            </details>
+        </div>
     </div>
 
     <script>
-        // BỘ DỮ LIỆU DỰ PHÒNG (Sẽ chạy ngay cả khi không có Key)
-        const localDB = [
-            { topic: "Công việc", vi: "Tôi sẽ gửi email cho bạn sau cuộc họp.", en: "I will email you after the meeting." },
-            { topic: "Công việc", vi: "Thời hạn cuối cùng cho dự án này là khi nào?", en: "When is the deadline for this project?" },
-            { topic: "Công việc", vi: "Chúng ta cần thảo luận về kế hoạch marketing.", en: "We need to discuss the marketing plan." },
-            { topic: "Du lịch", vi: "Bạn có thể chỉ đường cho tôi tới sân bay không?", en: "Can you show me the way to the airport?" },
-            { topic: "Du lịch", vi: "Tôi muốn đặt một bàn cho hai người lúc 7 giờ.", en: "I'd like to book a table for two at 7 o'clock." },
-            { topic: "Giao tiếp", vi: "Rất vui được gặp bạn ngày hôm nay.", en: "It is nice to meet you today." },
-            { topic: "Giao tiếp", vi: "Bạn có thời gian rảnh vào cuối tuần này không?", en: "Do you have any free time this weekend?" }
+        // BỘ DỮ LIỆU TỰ THÂN (Self-contained Data)
+        const database = [
+            { t: "Công việc", vi: "Tôi sẽ gửi cho bạn bản báo cáo vào sáng mai.", en: "I will send you the report tomorrow morning." },
+            { t: "Công việc", vi: "Chúng ta cần thảo luận về dự án này trong cuộc họp.", en: "We need to discuss this project in the meeting." },
+            { t: "Công việc", vi: "Bạn có thể giúp tôi chuẩn bị tài liệu không?", en: "Can you help me prepare the documents?" },
+            { t: "Du lịch", vi: "Khách sạn này cách trung tâm thành phố bao xa?", en: "How far is this hotel from the city center?" },
+            { t: "Du lịch", vi: "Tôi muốn đặt một phòng đơn cho hai đêm.", en: "I'd like to book a single room for two nights." },
+            { t: "Đời sống", vi: "Bạn có muốn đi ăn tối cùng tôi tối nay không?", en: "Would you like to have dinner with me tonight?" },
+            { t: "Đời sống", vi: "Tôi đang học tiếng Anh để tìm một công việc tốt hơn.", en: "I am learning English to find a better job." }
         ];
 
+        let currentTopic = "Công việc";
         let currentQ = {};
 
-        function saveKey() {
-            localStorage.setItem('gemini_key', document.getElementById('api-key-input').value.trim());
-            alert("Đã lưu Key! AI sẽ tự động chấm điểm chi tiết cho bạn.");
+        function setTopic(name) {
+            currentTopic = name;
+            loadQuestion();
         }
 
-        function nextTrans() {
-            const topic = document.getElementById('topic-select').value;
-            const filtered = localDB.filter(q => q.topic === topic);
+        function loadQuestion() {
+            const filtered = database.filter(q => q.t === currentTopic);
             currentQ = filtered[Math.floor(Math.random() * filtered.length)];
             
-            document.getElementById('vietnamese-task').innerText = currentQ.vi;
-            document.getElementById('translation-input').value = "";
-            document.getElementById('feedback-area').classList.add('hidden');
-            document.getElementById('translation-input').focus();
+            document.getElementById('vi-display').innerText = currentQ.vi;
+            document.getElementById('en-input').value = "";
+            document.getElementById('en-input').className = "w-full p-5 text-lg border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 transition-all shadow-inner";
+            document.getElementById('result-box').classList.add('hidden');
+            document.getElementById('en-input').focus();
         }
 
-        function checkResult() {
-            const userAns = document.getElementById('translation-input').value.trim();
-            if(!userAns) return;
-
-            const feedbackArea = document.getElementById('feedback-area');
-            const feedbackContent = document.getElementById('feedback-content');
-            const key = localStorage.getItem('gemini_key');
-
-            feedbackArea.classList.remove('hidden');
-
-            // Kiểm tra cơ bản bằng máy trước
-            const isCorrect = userAns.toLowerCase().replace(/[.,?!]/g, "") === currentQ.en.toLowerCase().replace(/[.,?!]/g, "");
-
-            if (isCorrect) {
-                feedbackContent.className = "p-5 rounded-2xl border-2 border-green-200 bg-green-50 text-green-700";
-                feedbackContent.innerHTML = `<p class="font-bold text-lg">✅ Chính xác tuyệt đối!</p><p class="text-sm">"${currentQ.en}"</p>`;
-                setTimeout(nextTrans, 2000);
-            } else {
-                feedbackContent.className = "p-5 rounded-2xl border-2 border-red-200 bg-red-50 text-red-700";
-                feedbackContent.innerHTML = `<p class="font-bold">❌ Gần đúng rồi!</p>
-                                             <p class="text-xs mb-2 italic">Đáp án mẫu: "${currentQ.en}"</p>
-                                             <div id="ai-deep-check" class="text-[11px] text-slate-500 mt-2 p-2 bg-white rounded-lg border border-red-100">
-                                                ${key ? "⌛ Đang gọi AI chấm điểm chi tiết..." : "Nhập API Key để xem AI giải thích lỗi sai ngữ pháp."}
-                                             </div>`;
-                if(key) callAICheck(userAns);
-            }
-        }
-
-        async function callAICheck(userAns) {
-            const key = localStorage.getItem('gemini_key');
-            const aiDiv = document.getElementById('ai-deep-check');
+        function handleCheck() {
+            const userInp = document.getElementById('en-input');
+            const userAns = userInp.value.trim().toLowerCase().replace(/[.,?!]/g, "");
+            const correctAns = currentQ.en.toLowerCase().replace(/[.,?!]/g, "");
+            const resultBox = document.getElementById('result-box');
             
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Câu gốc: "${currentQ.vi}". Đáp án: "${currentQ.en}". Người dùng dịch: "${userAns}". Nhận xét ngắn gọn lỗi sai và cách sửa bằng tiếng Việt (dưới 50 từ).` }] }]
-                    })
-                });
-                const data = await response.json();
-                aiDiv.innerHTML = "<b>AI nhận xét:</b> " + data.candidates[0].content.parts[0].text;
-            } catch (e) {
-                aiDiv.innerHTML = "⚠️ Không thể kết nối AI (Lỗi Key hoặc Vùng). Hãy đối chiếu với đáp án mẫu phía trên.";
+            resultBox.classList.remove('hidden');
+
+            if (userAns === correctAns) {
+                userInp.className = "w-full p-5 text-lg border-2 rounded-2xl outline-none transition-all shadow-inner correct-glow";
+                resultBox.className = "mt-6 p-5 rounded-2xl border-2 bg-green-50 border-green-200 text-green-700";
+                document.getElementById('result-text').innerText = "✅ Rất tuyệt vời!";
+                document.getElementById('result-sample').innerText = "Bạn đã dịch chính xác từng từ.";
+                setTimeout(loadQuestion, 2000);
+            } else {
+                userInp.className = "w-full p-5 text-lg border-2 rounded-2xl outline-none transition-all shadow-inner wrong-glow";
+                resultBox.className = "mt-6 p-5 rounded-2xl border-2 bg-red-50 border-red-200 text-red-700";
+                document.getElementById('result-text').innerText = "❌ Chưa chính xác rồi";
+                document.getElementById('result-sample').innerText = `Đáp án đúng: "${currentQ.en}"`;
             }
         }
 
-        document.getElementById('translation-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); checkResult(); }
+        function saveKey() {
+            localStorage.setItem('gemini_key', document.getElementById('api-key').value.trim());
+            alert("Đã lưu Key! Tính năng AI giải thích đã được kích hoạt (nếu Key khả dụng).");
+        }
+
+        // Bắt sự kiện Enter
+        document.getElementById('en-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleCheck();
+            }
         });
 
-        window.onload = () => {
-            const savedKey = localStorage.getItem('gemini_key');
-            if(savedKey) document.getElementById('api-key-input').value = savedKey;
-            nextTrans();
-        };
+        window.onload = loadQuestion;
     </script>
 </body>
 </html>
